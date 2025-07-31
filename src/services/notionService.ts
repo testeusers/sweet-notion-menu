@@ -1,22 +1,29 @@
 import { Product } from '@/types/product';
 import { mockProducts } from '@/data/mockProducts';
+import { supabase } from '@/integrations/supabase/client';
 
-// For demo purposes, using mock data
-// In production, replace this with actual Notion integration
 export async function fetchProducts(): Promise<Product[]> {
   try {
-    // Simulate API delay for realistic experience
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('Fetching products from Notion via Supabase edge function...');
     
-    // TODO: Replace with actual Notion API call when Supabase is configured
-    // const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    // const response = await fetch(`${SUPABASE_URL}/functions/v1/get-products`);
-    // const data = await response.json();
-    // return data.products || [];
+    const { data, error } = await supabase.functions.invoke('get-products');
     
+    if (error) {
+      console.error('Error calling edge function:', error);
+      // Fallback to mock data
+      return mockProducts.filter(product => product.disponivel);
+    }
+    
+    if (data?.products && Array.isArray(data.products)) {
+      console.log(`Successfully fetched ${data.products.length} products from Notion`);
+      return data.products;
+    }
+    
+    console.log('No products returned from Notion, using mock data as fallback');
     return mockProducts.filter(product => product.disponivel);
   } catch (error) {
     console.error('Error fetching products:', error);
+    // Fallback to mock data
     return mockProducts.filter(product => product.disponivel);
   }
 }
